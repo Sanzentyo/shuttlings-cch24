@@ -1,18 +1,23 @@
-use axum::{routing::get, Router, response::{Redirect, IntoResponse}, http::StatusCode};
+use axum::{
+    routing::get,
+    Router,    
+};
 
-async fn hello_bird() -> &'static str {
-    "Hello, bird!"
-}
+mod day1;
+mod day2;
 
-async fn youtube_location() -> impl IntoResponse {
-    (StatusCode::FOUND, Redirect::to("https://www.youtube.com/watch?v=9Gc4QTqslN4"))
-}
+
+
 
 #[shuttle_runtime::main]
 async fn main() -> shuttle_axum::ShuttleAxum {
     let router = Router::new()
-        .route("/", get(hello_bird))
-        .route("/-1/seek", get(youtube_location));
+        .route("/", get(day1::hello_bird)) // day1 task 1
+        .route("/-1/seek", get(day1::seek_and_found)) // day1 task 2
+        .route("/2/dest", get(day2::from_key_calc)) // day2 task 1
+        .route("/2/key", get(day2::from_to_calc)) // day2 task 2
+        .route("/2/v6/dest", get(day2::from_key_calc_v6)) // day2 task 3
+        .route("/2/v6/key", get(day2::from_to_calc_v6)); // day2 task 3
 
     Ok(router.into())
 }
