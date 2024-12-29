@@ -8,9 +8,13 @@ axum = { version = "0.7.9", features = ["macros"] }
 shuttle-axum = "0.49.0"
 shuttle-runtime = "0.49.0"
 tokio = "1.42.0"
-serde = "1.0.215"
+serde = "1.0.217"
 toml = "0.8"
-hyper = "1.5"
+hyper = "1.5.2"
 cargo-manifest = "0.17.0"
 serde_json = { version = "1.0.134" }
-yaml-rust2 = "0.9"
+serde_yml = "0.0.12"
+leaky-bucket = "1.1.2"
+sqlx = { version = "0.8.2", features = ["runtime-tokio-rustls", "macros", "chrono", "uuid"] }
+uuid = "1.11.0"
+chrono = "0.4.39"
