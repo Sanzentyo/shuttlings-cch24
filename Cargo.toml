@@ -13,3 +13,4 @@ toml = "0.8"
 hyper = "1.5"
 cargo-manifest = "0.17.0"
 serde_json = { version = "1.0.134" }
+yaml-rust2 = "0.9"
