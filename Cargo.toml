@@ -18,3 +18,4 @@ leaky-bucket = "1.1.2"
 sqlx = { version = "0.8.2", features = ["runtime-tokio-rustls", "macros", "chrono", "uuid"] }
 uuid = "1.11.0"
 chrono = "0.4.39"
+rand = "0.8.5"
