@@ -5,9 +5,8 @@ use axum::{
 
 mod day1;
 mod day2;
-
-
-
+mod day5;
+mod day9;
 
 #[shuttle_runtime::main]
 async fn main() -> shuttle_axum::ShuttleAxum {
@@ -17,7 +16,8 @@ async fn main() -> shuttle_axum::ShuttleAxum {
         .route("/2/dest", get(day2::from_key_calc)) // day2 task 1
         .route("/2/key", get(day2::from_to_calc)) // day2 task 2
         .route("/2/v6/dest", get(day2::from_key_calc_v6)) // day2 task 3
-        .route("/2/v6/key", get(day2::from_to_calc_v6)); // day2 task 3
+        .route("/2/v6/key", get(day2::from_to_calc_v6)) // day2 task 3
+        .route("/5/manifest", get(day5::return_manifest).post(day5::return_manifest)); // day5 task 1
 
     Ok(router.into())
 }
