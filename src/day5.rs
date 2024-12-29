@@ -1,37 +1,21 @@
-use std::f32::consts::E;
+use std::{f32::consts::E, path::Display};
 
 use axum::{http::HeaderMap, http::StatusCode, response::IntoResponse, body::{Body, to_bytes}};
 use serde::Deserialize;
-use toml::de::Deserializer;
+use toml;
 use cargo_manifest::Manifest;
-
-#[derive(Deserialize, Debug)]
-struct Package {
-    package: PackageInfo,
-}
-
-#[derive(Deserialize, Debug)]
-struct ValuePackege {
-    package: toml::Value,
-}
-
-#[derive(Deserialize, Debug)]
-struct PackageInfo {
-    name: String,
-    authors: Vec<String>,
-    keywords: Vec<String>,
-    metadata: Metadata,
-}
-
-#[derive(Deserialize, Debug)]
-struct Metadata {
-    orders: Vec<Order>,
-}
+use serde_json::Value;
 
 #[derive(Deserialize, Debug)]
 struct Order {
     item: String,
     quantity: u32,
+}
+
+impl std::fmt::Display for Order {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}: {}", self.item.to_string(), self.quantity)
+    }
 }
 
 #[axum::debug_handler]
@@ -42,25 +26,66 @@ pub async fn return_manifest(headers: HeaderMap, body: Body) -> impl IntoRespons
             let bytes = to_bytes(body, content_size).await.expect("Invalid body");
             let toml_str = String::from_utf8(bytes.to_vec()).expect("Invalid body");
 
-            if let Err(e) = toml::from_str::<Manifest>(&toml_str) {
+            let toml = if let Ok(toml) = toml::from_str::<Manifest>(&toml_str) {
+                toml
+            } else {
                 return (StatusCode::BAD_REQUEST, "Invalid manifest".to_string())
-            }
+            };
 
-            let de = Deserializer::new(&toml_str);
-            let package: Package = match Package::deserialize(de) {
-                Ok(package) => package,
-                Err(e) => {
-                    println!("Invalid manifest: {:?}", e);
-                    return (StatusCode::NO_CONTENT, "No order found".to_string())
-                }
+            println!("Package: {:?}", toml.package);
+
+            let packege = if let Some(packege) = toml.package{
+                packege
+            } else {
+                return (StatusCode::NO_CONTENT, "No package found".to_string())
+            };
+
+            println!("Metadata: {:?}", packege.metadata);
+
+            let metadata: toml::Value = if let Some(metadata) = packege.metadata {
+                metadata
+            } else {
+                return (StatusCode::NO_CONTENT, "No metadata found".to_string())
             };
             
-            println!("{:?}", package);
-            if let Some(order) = package.package.metadata.orders.first() {
-                (StatusCode::OK, package.package.metadata.orders.iter().map(|order| format!("{}: {}",order.item,  order.quantity)).collect::<Vec<String>>().join("\n"))
+            let order_value = if let Some(order) = metadata.get("orders") {
+                order
             } else {
-                (StatusCode::NO_CONTENT, "No order found".to_string())
+                return (StatusCode::NO_CONTENT, "No order found".to_string())
+            };
+
+            let mut orders: Vec<Order> = Vec::new();
+            for order in order_value.as_array().unwrap() {
+                let item = if let Some(item) = order.get("item") {
+                    let mut item = item.to_string();
+                    item.remove(0).to_string();
+                    item.pop();
+                    item
+                } else {
+                    continue;
+                };
+                let quantity:u32 = {
+                    let quantity_str = if let Some(quantity) = order.get("quantity") {
+                        quantity.to_string()
+                    } else {
+                        continue;
+                    };
+                    if let Ok(quantity) = quantity_str.parse::<u32>() {
+                        quantity
+                    } else {
+                        continue;
+                    }
+                };
+                orders.push(Order{item, quantity});
             }
+
+            if orders.len() == 0 {
+                return (StatusCode::NO_CONTENT, "No order found".to_string())
+            }
+
+            let result: Vec<String> = orders.iter().map(|order| order.to_string()).collect();
+
+            (StatusCode::OK, result.join("\n"))
 
         },
         Some(_) => {
