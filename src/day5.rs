@@ -1,10 +1,9 @@
-use std::{f32::consts::E, path::Display};
-
 use axum::{http::HeaderMap, http::StatusCode, response::IntoResponse, body::{Body, to_bytes}};
 use serde::Deserialize;
 use toml;
 use cargo_manifest::Manifest;
-use serde_json::Value;
+use serde_json;
+
 
 #[derive(Deserialize, Debug)]
 struct Order {
@@ -32,15 +31,11 @@ pub async fn return_manifest(headers: HeaderMap, body: Body) -> impl IntoRespons
                 return (StatusCode::BAD_REQUEST, "Invalid manifest".to_string())
             };
 
-            println!("Package: {:?}", toml.package);
-
             let packege = if let Some(packege) = toml.package{
                 packege
             } else {
                 return (StatusCode::NO_CONTENT, "No package found".to_string())
             };
-
-            println!("Metadata: {:?}", packege.metadata);
 
             let metadata: toml::Value = if let Some(metadata) = packege.metadata {
                 metadata
@@ -57,10 +52,11 @@ pub async fn return_manifest(headers: HeaderMap, body: Body) -> impl IntoRespons
             let mut orders: Vec<Order> = Vec::new();
             for order in order_value.as_array().unwrap() {
                 let item = if let Some(item) = order.get("item") {
-                    let mut item = item.to_string();
-                    item.remove(0).to_string();
-                    item.pop();
-                    item
+                    let item = match item {
+                        toml::Value::String(item) => item,
+                        _ => continue,
+                    };
+                    item.to_owned()
                 } else {
                     continue;
                 };
@@ -84,6 +80,7 @@ pub async fn return_manifest(headers: HeaderMap, body: Body) -> impl IntoRespons
             }
 
             let result: Vec<String> = orders.iter().map(|order| order.to_string()).collect();
+            println!("result: {:?}", result);
 
             (StatusCode::OK, result.join("\n"))
 
