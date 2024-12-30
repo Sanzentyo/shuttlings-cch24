@@ -65,6 +65,7 @@ async fn main(#[shuttle_shared_db::Postgres] pool: sqlx::PgPool) -> shuttle_axum
         .route("/19/remove/:id", delete(day19::remove_db)) // day19 task 3
         .route("/19/undo/:id", get(day19::undo_db).put(day19::undo_db).post(day19::undo_db)) // day19 task 3
         .route("/19/draft", get(day19::draft_db).post(day19::draft_db)) // day19 task 4
+        .route("/19/list", get(day19::list_db).post(day19::list_db)) // day19 task 5
         .with_state(state_pool);
 
     Ok(router.into())

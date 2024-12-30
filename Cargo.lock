@@ -2334,6 +2334,7 @@ dependencies = [
  "hyper 1.5.2",
  "jsonwebtoken",
  "leaky-bucket",
+ "once_cell",
  "rand",
  "serde",
  "serde_json",
