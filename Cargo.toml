@@ -15,7 +15,9 @@ cargo-manifest = "0.17.0"
 serde_json = { version = "1.0.134" }
 serde_yml = "0.0.12"
 leaky-bucket = "1.1.2"
-sqlx = { version = "0.8.2", features = ["runtime-tokio-rustls", "macros", "chrono", "uuid"] }
+sqlx = { version = "0.8.2", features = ["runtime-tokio-rustls", "macros", "chrono", "uuid", "postgres"] }
 uuid = "1.11.0"
 chrono = "0.4.39"
 rand = "0.8.5"
+jsonwebtoken = "9.3.0"
+shuttle-shared-db = { version = "0.49.0", features = ["postgres", "sqlx"] }

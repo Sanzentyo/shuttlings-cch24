@@ -1,11 +1,13 @@
 use axum::{
-    routing::get,
+    routing::{delete, get},
     Router,    
 };
 use std::sync::{Mutex, Arc};
 use leaky_bucket::RateLimiter;
 use std::time::Duration;
 use rand::SeedableRng;
+use shuttle_shared_db;
+use sqlx;
 
 mod day1;
 mod day2;
@@ -13,9 +15,10 @@ mod day5;
 mod day9;
 mod day12;
 mod day16;
+mod day19;
 
 #[shuttle_runtime::main]
-async fn main() -> shuttle_axum::ShuttleAxum {
+async fn main(#[shuttle_shared_db::Postgres] pool: sqlx::PgPool) -> shuttle_axum::ShuttleAxum {
     let milk_state = day9::MilkState {
         limiter: Arc::new(Mutex::new(RateLimiter::builder()
             .max(day9::MAX_MILK)
@@ -27,6 +30,14 @@ async fn main() -> shuttle_axum::ShuttleAxum {
     let board_state = day12::StateBoard {
         board: Arc::new(Mutex::new(day12::Board::new())),
         seed: Arc::new(Mutex::new(rand::rngs::StdRng::seed_from_u64(2024))),
+    };
+
+    sqlx::query(day19::MAKE_DB_SQL)
+        .execute(&pool)
+        .await
+        .unwrap();
+    let state_pool = day19::StatePostgres {
+        pool: Arc::new(pool),
     };
     
 
@@ -46,7 +57,15 @@ async fn main() -> shuttle_axum::ShuttleAxum {
         .route("/12/board", get(day12::get_board).post(day12::get_board)) // day12 task 3
         .route("/12/random-board", get(day12::rand_board).post(day12::rand_board)) // day12 task 4
         .with_state(board_state)
-        .route("/16/wrap", get(day16::wrap).post(day16::wrap)); // day16 task 1
+        .route("/16/wrap", get(day16::wrap).post(day16::wrap)) // day16 task 1
+        .route("/16/unwrap", get(day16::unwrap).post(day16::unwrap)) // day16 task 2
+        .route("/16/decode", get(day16::decode_santa).post(day16::decode_santa)) // day16 task 2
+        .route("/19/reset", get(day19::reset_db).post(day19::reset_db)) // day19 task 1
+        .route("/19/cite/:id", get(day19::cite).post(day19::cite)) // day19 task 2
+        .route("/19/remove/:id", delete(day19::remove_db)) // day19 task 3
+        .route("/19/undo/:id", get(day19::undo_db).put(day19::undo_db).post(day19::undo_db)) // day19 task 3
+        .route("/19/draft", get(day19::draft_db).post(day19::draft_db)) // day19 task 4
+        .with_state(state_pool);
 
     Ok(router.into())
 }
