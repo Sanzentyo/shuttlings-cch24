@@ -2,12 +2,13 @@ use axum::{
     routing::get,
     Router,    
 };
+use tower_http::services::ServeDir;
 use std::sync::{Mutex, Arc};
 use leaky_bucket::RateLimiter;
 use std::time::Duration;
 use rand::SeedableRng;
-//use shuttle_shared_db;
-//use sqlx;
+use shuttle_shared_db;
+use sqlx;
 
 mod day1;
 mod day2;
@@ -15,10 +16,13 @@ mod day5;
 mod day9;
 mod day12;
 mod day16;
-//mod day19;
+mod day19;
+mod day23;
 
 #[shuttle_runtime::main]
-async fn main(/*#[shuttle_shared_db::Postgres] pool: sqlx::PgPool*/) -> shuttle_axum::ShuttleAxum {
+async fn main(
+    #[shuttle_shared_db::Postgres] pool: sqlx::PgPool
+) -> shuttle_axum::ShuttleAxum {
     let milk_state = day9::MilkState {
         limiter: Arc::new(Mutex::new(RateLimiter::builder()
             .max(day9::MAX_MILK)
@@ -32,13 +36,13 @@ async fn main(/*#[shuttle_shared_db::Postgres] pool: sqlx::PgPool*/) -> shuttle_
         seed: Arc::new(Mutex::new(rand::rngs::StdRng::seed_from_u64(2024))),
     };
 
-    /*sqlx::query(day19::MAKE_DB_SQL)
+    sqlx::query(day19::MAKE_DB_SQL)
         .execute(&pool)
         .await
         .unwrap();
     let state_pool = day19::StatePostgres {
         pool: Arc::new(pool),
-    };*/
+    };
     
 
     let router = Router::new()
@@ -60,14 +64,18 @@ async fn main(/*#[shuttle_shared_db::Postgres] pool: sqlx::PgPool*/) -> shuttle_
         .route("/16/wrap", get(day16::wrap).post(day16::wrap)) // day16 task 1
         .route("/16/unwrap", get(day16::unwrap).post(day16::unwrap)) // day16 task 2
         .route("/16/decode", get(day16::decode_santa).post(day16::decode_santa)) // day16 task 2
-        /*.route("/19/reset", get(day19::reset_db).post(day19::reset_db)) // day19 task 1
+        .route("/19/reset", get(day19::reset_db).post(day19::reset_db)) // day19 task 1
         .route("/19/cite/:id", get(day19::cite).post(day19::cite)) // day19 task 2
         .route("/19/remove/:id", get(day19::remove_db).delete(day19::remove_db)) // day19 task 3
         .route("/19/undo/:id", get(day19::undo_db).put(day19::undo_db).post(day19::undo_db)) // day19 task 3
         .route("/19/draft", get(day19::draft_db).post(day19::draft_db)) // day19 task 4
         .route("/19/list", get(day19::list_db).post(day19::list_db)) // day19 task 5
-        .with_state(state_pool)*/
-        ;
+        .with_state(state_pool)
+        .nest_service("/assets", ServeDir::new("assets")) // day23 task 1
+        .route("/23/star", get(day23::star_lit)) // day23 task 1
+        .route("/23/present/:color", get(day23::present_color).post(day23::present_color)) // day23 task 2
+        .route("/23/ornament/:state/:n", get(day23::ornament)) // day23 task 3
+        .route("/23/lockfile", get(day23::lockfile).post(day23::lockfile)); // day23 task 6
 
     Ok(router.into())
 }
